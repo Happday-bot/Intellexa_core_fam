@@ -59,31 +59,31 @@ setFormData({ email: "", password: "" });
 
 setTimeout(() => {
   if (data.user.role === "Technical Lead" && data.user.team === "Intellexa") {
-    navigate("/techlead");
+    navigate("/Intellexa_core_fam/techlead");
   } 
   else if (
     ((data.user.role === "Faculty Coordinator" || data.user.role === "Vice President" || data.user.role === "President") && data.user.team === "Intellexa") ||
     ((data.user.role === "Lead" || data.user.role === "Co-Lead" || data.user.role === "Core Member") && data.user.team === "Event")
   ) {
-    navigate("/admin");
+    navigate("/Intellexa_core_fam/admin");
   } 
   else if (
     (data.user.role === "Lead" || data.user.role === "Co-Lead" || data.user.role === "Core Member") &&
     data.user.team === "Media"
   ) {
-    navigate("/mediateam");
+    navigate("/Intellexa_core_fam/mediateam");
   } 
   else if (
     (data.user.role === "Lead" || data.user.role === "Co-Lead" || data.user.role === "Core Member") &&
     data.user.team === "Design"
   ) {
-    navigate("/designteam");
+    navigate("/Intellexa_core_fam/designteam");
   } 
   else if (
     (data.user.role === "Lead" || data.user.role === "Co-Lead" || data.user.role === "Core Member") &&
     ["AI", "App", "Web", "Backend", "Info Sec", "IOT"].includes(data.user.team)
   ) {
-    navigate("/techteams");
+    navigate("/Intellexa_core_fam/techteams");
   } 
   else {
     setSuccess(false);
@@ -168,7 +168,7 @@ setTimeout(() => {
           <p className="text-sm text-gray-500 text-center mt-6">
             Don’t have an account?{" "}
             <a
-              href="/signup"
+              href="/Intellexa_core_fam/signup"
               className="text-indigo-600 font-semibold hover:underline"
             >
               Create one
