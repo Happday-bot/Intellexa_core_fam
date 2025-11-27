@@ -227,22 +227,22 @@ export default function Navbar({ auth, setAuth }) {
           <NavItem to="/#overview" hash>Overview</NavItem>
           <NavItem to="/#domains" hash>Domains</NavItem>
           <NavItem to="/#events" hash>Potential Events</NavItem>
-          <NavItem to="/contributions/teams/#contribution" hash>Team Contributions</NavItem>
-          <NavItem to="/query">Raise a Query</NavItem>
+          <NavItem to="/Intellexa_core_fam/contributions/teams/#contribution" hash>Team Contributions</NavItem>
+          <NavItem to="/Intellexa_core_fam/query">Raise a Query</NavItem>
 
           {!auth && (
             <>
-              <NavItem to="/signin">Sign in</NavItem>
-              <NavItem to="/signup">Sign up</NavItem>
+              <NavItem to="/Intellexa_core_fam/signin">Sign in</NavItem>
+              <NavItem to="/Intellexa_core_fam/signup">Sign up</NavItem>
             </>
           )}
 
           {auth && auth.team === "Media" && (
-            <NavItem to="/mediateam">Dashboard</NavItem>
+            <NavItem to="/Intellexa_core_fam/mediateam">Dashboard</NavItem>
           )}
 
           {auth && auth.team === "Design" && (
-            <NavItem to="/designteam">Dashboard</NavItem>
+            <NavItem to="/Intellexa_core_fam/designteam">Dashboard</NavItem>
           )}
 
           {auth && auth.team === "Intellexa" && auth.role === "Technical Lead" && (
@@ -251,12 +251,12 @@ export default function Navbar({ auth, setAuth }) {
 
           {auth &&
             ((auth.team === "Intellexa" || auth.team === "Event") && auth.role !== "Technical Lead") && (
-              <NavItem to="/admin">Dashboard</NavItem>
+              <NavItem to="/Intellexa_core_fam/admin">Dashboard</NavItem>
             )}
 
           {auth && (
             <>
-              <NavItem to="/techteams">Contribute Event</NavItem>
+              <NavItem to="/Intellexa_core_fam/techteams">Contribute Event</NavItem>
 
               {/* Logout */}
               <div
