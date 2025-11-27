@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "homepage": "https://github.com/Happday-bot/Intellexa_core_fam",
+  "homepage": "https://Happday-bot.github.io/Intellexa_core_fam/",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
