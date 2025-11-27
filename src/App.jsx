@@ -32,24 +32,24 @@ function App() {
         <Router>
           <Navbar auth={auth} setAuth={setAuth} />
           <Routes>
-            <Route path="/" element={<Dashboard />} />
-            <Route path="/contributions/teams" element={<Contributions />} />
-            <Route path="/query" element={<Query />}/>
-            <Route path="/signin" element={<SignIn setAuth={setAuth} />} />
-            <Route path="/signup" element={<SignUp />} />
+            <Route path="/Intellexa_core_fam/" element={<Dashboard />} />
+            <Route path="/Intellexa_core_fam/contributions/teams" element={<Contributions />} />
+            <Route path="/Intellexa_core_fam/query" element={<Query />}/>
+            <Route path="/Intellexa_core_fam/signin" element={<SignIn setAuth={setAuth} />} />
+            <Route path="/Intellexa_core_fam/signup" element={<SignUp />} />
 
-            {auth && auth.team === "Media" && <Route path="/mediateam" element={<MediaTeamDashboard />} />}
-            {auth && auth.team === "Design" && <Route path="/designteam" element={<DesignTeamDashboard />} />}
-            {auth && auth.team === "Intellexa" && auth.role === "Technical Lead" && <Route path="/techlead" element={<TechLeadForms />} />}
-            {auth && (auth.team === "Intellexa" || auth.team === "Event") && auth.role !== "Technical Lead" && <Route path="/admin" element={<AdminDashboard />} />}
+            {auth && auth.team === "Media" && <Route path="/Intellexa_core_fam/mediateam" element={<MediaTeamDashboard />} />}
+            {auth && auth.team === "Design" && <Route path="/Intellexa_core_fam/designteam" element={<DesignTeamDashboard />} />}
+            {auth && auth.team === "Intellexa" && auth.role === "Technical Lead" && <Route path="/Intellexa_core_fam/techlead" element={<TechLeadForms />} />}
+            {auth && (auth.team === "Intellexa" || auth.team === "Event") && auth.role !== "Technical Lead" && <Route path="/Intellexa_core_fam/admin" element={<AdminDashboard />} />}
 
             {auth && (
               <>
-                <Route path="/techteams" element={<TechTeams />} />
+                <Route path="/Intellexa_core_fam/techteams" element={<TechTeams />} />
               </>
             )}
 
-            <Route path="*" element={<Navigate to="/"/>}/>
+            <Route path="*" element={<Navigate to="/Intellexa_core_fam/"/>}/>
           </Routes>
         </Router>
       )}
