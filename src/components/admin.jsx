@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { Users, Calendar, MessageSquare } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { getCred } from "./auth/auth";
-import { getEvents, refetchEvents } from "../data/bootstrapStore";
+import { getEvents, getUsers, refetchEvents, refetchUsers } from "../data/bootstrapStore";
 import { baseurl } from "../data/url";
 
 // ================= Sidebar =================
@@ -74,27 +74,19 @@ const MembersTab = () => {
   ]);
 
   // Fetch users
-  useEffect(() => {
-    const fetchUsers = async () => {
+  
       try {
-        const user_info = getCred();
-        if (!user_info) {
-          return;
+        const data = getUsers();
+        if(data){
+          setUsers(data.users || []);
         }
-        const res = await fetch(`${baseurl}/users`, {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            "X-User": JSON.stringify(user_info), // sending credentials as header
-          },
-        });
-        const data = await res.json();
-        setUsers(data.users || []);
+        else{
+          const fetchedUsers = refetchUsers();
+          setUsers(fetchedUsers.users || []);
+        }
       } catch (err) {
       }
-    };
-    fetchUsers();
-  }, []);
+  
 
   // Handle role/team changes locally
   const handleRoleChange = (id, role) => {

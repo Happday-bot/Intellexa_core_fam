@@ -2,7 +2,6 @@ let Cred = false;
 
 // --- GETTERS ---
 export const getCred = () =>{
-    console.log(Cred);
      return Cred;
     }
 

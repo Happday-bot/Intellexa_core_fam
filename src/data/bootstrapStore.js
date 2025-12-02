@@ -9,6 +9,7 @@ let DESIGN_STATS = null;
 let EVENT_STATS = null;
 let EVENTS = null;
 let STATS = null;
+let USERS = null;
 
 // --- GETTERS ---
 export const getMediaStats = () => MEDIA_STATS;
@@ -16,6 +17,7 @@ export const getDesignStats = () => DESIGN_STATS;
 export const getEventStats = () => EVENT_STATS;
 export const getEvents = () => EVENTS;
 export const getstats = ()=> STATS;
+export const getUsers = () => USERS;
 
 // --- SETTERS (used by bootstrap only) ---
 export const __setMediaStats = (data) => { MEDIA_STATS = data; };
@@ -23,6 +25,7 @@ export const __setDesignStats = (data) => { DESIGN_STATS = data; };
 export const __setEventStats = (data) => { EVENT_STATS = data; };
 export const __setEvents = (data) => { EVENTS = data; };
 export const __setStats = (data) => {STATS = data;};
+export const __setUsers = (data) => { USERS = data; };
 
 // --- REFETCH FUNCTIONS (safe to expose globally) ---
 export const refetchMediaStats = async () => {
@@ -65,4 +68,17 @@ export const refetchStats = async () => {
   const data = await res.json();
   STATS = data;
   return data;
+}
+
+export const refetchUsers = async () => {
+    const res = await fetch(`${baseurl}/users`, {
+    method: "GET",
+      headers: {    
+        "Content-Type": "application/json",
+        "X-User": JSON.stringify(getCred()), // sending credentials as header
+      },
+    });
+    const data = await res.json()
+    USERS = data;
+    return data;
 }

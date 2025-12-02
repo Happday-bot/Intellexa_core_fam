@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { __setMediaStats, __setDesignStats, __setEvents, __setEventStats, __setStats } from "./bootstrapStore";
+import { __setMediaStats, __setDesignStats, __setEvents, __setEventStats, __setStats,  __setUsers } from "./bootstrapStore";
 import { getCred } from "../components/auth/auth";
 import { baseurl } from "./url";
 
@@ -24,12 +24,11 @@ export default function BootstrapData({ children, onReady }) {
         __setEventStats(eventData);
 
         // 4. Fetch events
-        const user_info = JSON.parse(sessionStorage.getItem("user"));
         const eventsRes = await fetch(`${baseurl}/events`, {
           method: "GET",
           headers: {
             "Content-Type": "application/json",
-            "X-User": JSON.stringify(user_info),
+            "X-User": JSON.stringify(getCred()),
           },
         });
 
@@ -40,6 +39,17 @@ export default function BootstrapData({ children, onReady }) {
        const stats = await fetch(`${baseurl}/events/count`);
        const statsData = await stats.json();
        __setStats(statsData);
+
+       //fetch users
+       const users = await fetch(`${baseurl}/users`, {
+        method: "GET",
+        headers: {    
+        "Content-Type": "application/json",
+        "X-User": JSON.stringify(getCred()), // sending credentials as header
+        },
+       });
+       const usersData = await users.json();
+       __setUsers(usersData);
 
       }finally {
         onReady(); // <---- signal completion
