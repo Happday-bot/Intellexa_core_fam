@@ -73,19 +73,19 @@ const MembersTab = () => {
     "Yet to be set",
   ]);
 
-  // Fetch users
+ const loadUsers = async () => {
+    try {
+      const data = getUsers();
+      setUsers(data.users);   // your state setter
+      console.log("Users loaded:", data);
+    } catch (err) {
+      console.error("User fetch failed:", err);
+    }
+  };
   
-      try {
-        const data = getUsers();
-        if(data){
-          setUsers(data.users || []);
-        }
-        else{
-          const fetchedUsers = refetchUsers();
-          setUsers(fetchedUsers.users || []);
-        }
-      } catch (err) {
-      }
+useEffect(() => {
+  loadUsers();
+}, []);
   
 
   // Handle role/team changes locally
@@ -113,6 +113,7 @@ const MembersTab = () => {
       if (!res.ok) throw new Error("Failed to update user");
     }finally {
       setLoadingId(null);
+      refetchUsers();
     }
   };
 
@@ -128,6 +129,7 @@ const MembersTab = () => {
       setUsers(users.filter((u) => u._id !== id));
     } finally {
       setLoadingId(null);
+      refetchUsers();
     }
   };
 

@@ -1,7 +1,7 @@
  import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { __setCred } from "./auth/auth";
-import { refetchEvents } from "../data/bootstrapStore";
+import { refetchEvents, refetchUsers } from "../data/bootstrapStore";
 import { baseurl } from "../data/url";
 
 
@@ -54,6 +54,7 @@ sessionStorage.setItem("user", JSON.stringify(data.user));
 __setCred(data.user);
 setAuth(data.user);
 refetchEvents();
+refetchUsers();
 setSuccess(true);
 setFormData({ email: "", password: "" });
 
