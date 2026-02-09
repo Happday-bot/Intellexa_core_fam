@@ -12,6 +12,7 @@ import {
 import { getDesignStats } from "../data/bootstrapStore";
 import { getCred } from "./auth/auth";
 import { baseurl } from "../data/url";
+import { motion } from "framer-motion";
 
 const DesignTeamDashboard = () => {
   const [data, setData] = useState([]);
@@ -80,86 +81,101 @@ const DesignTeamDashboard = () => {
   const user = getCred();
 
   return (
-    <>
-      <div className="min-h-screen bg-gray-50 px-16 pt-14">
-        <h1 className="text-3xl font-bold text-gray-800 mb-4">
-          🎨 Design Team Dashboard
-        </h1>
-        <h2 className="text-2xl font-bold text-gray-800 mb-6">Welcome Back, {user.name} 👋</h2>
+    <div className="min-h-screen pb-20">
+      <div className="max-w-7xl mx-auto px-6 py-12">
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="mb-12"
+        >
+          <h1 className="text-4xl font-extrabold tracking-tight mb-2 font-display">
+            Design Team <span className="text-gradient">Dashboard</span>
+          </h1>
+          <p className="text-slate-500 text-lg font-medium">Welcome Back, {user.name} 👋</p>
+        </motion.div>
 
         {showForm && (
-          <div className="bg-white shadow-lg rounded-lg p-6 max-w-md mx-auto border border-gray-200 mb-10">
-            <h2 className="text-xl font-semibold text-gray-700 mb-4">
-              Update Monthly Poster Stats ({currentMonth})
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="glass-effect rounded-3xl p-8 max-w-xl mx-auto border border-white/40 shadow-premium mb-12"
+          >
+            <h2 className="text-2xl font-bold text-slate-800 mb-6 font-display">
+              Update Monthly Output <span className="text-indigo-500">({currentMonth})</span>
             </h2>
-            <form onSubmit={handleSubmitStats} className="space-y-4">
+            <form onSubmit={handleSubmitStats} className="space-y-6">
               <div>
-                <label className="block text-sm font-medium text-gray-600 mb-1">
-                  Poster Count
+                <label className="block text-sm font-bold text-slate-600 mb-2 uppercase tracking-wide">
+                  Posters Created
                 </label>
                 <input
                   type="number"
                   name="posters"
                   value={formData.posters}
                   onChange={handleChangeStats}
-                  className="w-full border px-3 py-2 rounded-lg focus:ring-2 focus:ring-indigo-400"
+                  className="w-full bg-white/50 border border-slate-200 px-4 py-3 rounded-2xl focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-500 transition-all outline-none font-semibold text-slate-700"
+                  placeholder="Enter number of posters"
                   required
                 />
               </div>
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className={`w-full font-semibold py-2 rounded-lg transition ${isSubmitting
-                  ? "bg-gray-400 cursor-not-allowed text-white"
-                  : "bg-indigo-600 hover:bg-indigo-700 text-white"
+                className={`w-full py-4 rounded-2xl font-bold text-lg transition-all shadow-lg ${isSubmitting
+                  ? "bg-slate-200 text-slate-400 cursor-not-allowed"
+                  : "premium-gradient text-white hover:scale-[1.02] active:scale-[0.98] shadow-indigo-200"
                   }`}
               >
-                {isSubmitting ? "Saving..." : "Submit Data"}
+                {isSubmitting ? "Syncing..." : "Submit Stat"}
               </button>
             </form>
-          </div>
+          </motion.div>
         )}
 
         {/* Graph remains unchanged */}
-        <div className="bg-white shadow-2xl rounded-2xl p-6 border border-gray-100 mb-10">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-xl md:text-2xl font-semibold text-gray-700 flex items-center gap-2">
-              📊 Monthly Poster Count Overview
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="glass-effect rounded-3xl p-8 border border-white/40 shadow-premium"
+        >
+          <div className="flex items-center space-x-4 mb-8">
+            <div className="w-1.5 h-8 bg-indigo-500 rounded-full" />
+            <h2 className="text-2xl font-bold text-slate-800 font-display">
+              Monthly Poster Count Overview
             </h2>
           </div>
 
-          <ResponsiveContainer width="100%" height={400}>
-            <LineChart data={data} margin={{ top: 10, right: 20, bottom: 5, left: 0 }}>
-              <CartesianGrid strokeDasharray="4 4" stroke="#e5e7eb" />
-              <XAxis
-                dataKey={(entry) =>
-                  `${entry.month.slice(0, 3)} '${entry.year.toString().slice(-2)}`
-                }
-                tick={{ fontSize: 12, fill: "#4b5563" }}
-              />
-              <YAxis tick={{ fill: "#4b5563" }} />
-              <Tooltip
-                contentStyle={{
-                  backgroundColor: "#f9fafb",
-                  borderRadius: "8px",
-                  border: "1px solid #d1d5db",
-                  padding: "8px",
-                }}
-              />
-              <Legend verticalAlign="top" height={36} />
-              <Line
-                type="monotone"
-                dataKey="posters"
-                stroke="#6366F1"
-                strokeWidth={3}
-                dot={{ r: 4, strokeWidth: 2, fill: "#6366F1" }}
-              />
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
+          <div className="h-[450px]">
+            <ResponsiveContainer width="100%" height="100%">
+              <LineChart data={data} margin={{ top: 10, right: 20, bottom: 5, left: 0 }}>
+                <CartesianGrid strokeDasharray="4 4" stroke="#f1f5f9" vertical={false} />
+                <XAxis
+                  dataKey={(entry) => `${entry.month.slice(0, 3)} '${entry.year.toString().slice(-2)}`}
+                  axisLine={false}
+                  tickLine={false}
+                  tick={{ fontSize: 12, fill: "#94a3b8", fontWeight: 600 }}
+                  dy={10}
+                />
+                <YAxis axisLine={false} tickLine={false} tick={{ fill: "#94a3b8", fontSize: 12 }} />
+                <Tooltip
+                  contentStyle={{ backgroundColor: "rgba(255, 255, 255, 0.9)", borderRadius: "16px", border: "none", boxShadow: "0 10px 15px -3px rgba(0,0,0,0.1)" }}
+                />
+                <Legend iconType="circle" wrapperStyle={{ paddingTop: "20px" }} />
+                <Line
+                  type="monotone"
+                  dataKey="posters"
+                  stroke="#8b5cf6"
+                  strokeWidth={4}
+                  dot={{ r: 6, fill: "#8b5cf6", strokeWidth: 3, stroke: "#fff" }}
+                  activeDot={{ r: 10, fill: "#7c3aed" }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+        </motion.div>
 
       </div>
-    </>
+    </div>
   );
 };
 
