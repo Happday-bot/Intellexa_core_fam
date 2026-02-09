@@ -10,7 +10,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { ArrowUp, ArrowDown, ArrowLeftRight } from "lucide-react";
-import { getEvents,getMediaStats, refetchEvents } from "../data/bootstrapStore";
+import { getMediaStats } from "../data/bootstrapStore";
 import { getCred } from "./auth/auth";
 import { baseurl } from "../data/url";
 
@@ -18,9 +18,6 @@ const MediaTeamDashboard = () => {
   const [data, setData] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState({ instagram: "", linkedin: "", youtube: "" });
-  const [events, setEvents] = useState([]);
-  const [loadingEvents, setLoadingEvents] = useState(false);
-  const [savingIds, setSavingIds] = useState([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const currentMonth = new Date().toLocaleString("default", { month: "long" });
@@ -41,34 +38,6 @@ const MediaTeamDashboard = () => {
       }
     };
     fetchStats();
-  },[]);
-
-  // Fetch Events (simplified: load all without any conditions)
-  useEffect(() => {
-    const fetchEvents = async () => {
-      setLoadingEvents(true);
-      try {
-        const data = await getEvents()
-        const pastLimit = new Date();
-        pastLimit.setMonth(pastLimit.getMonth() - 6); // 6 months ago
-
-        // Filter events that are too far in the past
-        const recentEvents = data.events.filter(
-          (event) => new Date(event.eventDate) >= pastLimit
-        );
-
-        // Then sort descending by eventDate
-        const sortedEvents = recentEvents.sort(
-          (a, b) => new Date(b.eventDate) - new Date(a.eventDate)
-        );
-
-
-        setEvents(sortedEvents);
-      } finally {
-        setLoadingEvents(false);
-      }
-    };
-    fetchEvents();
   }, []);
 
   const handleChangeStats = (e) => {
@@ -107,44 +76,6 @@ const MediaTeamDashboard = () => {
     }
   };
 
-  const handleChangeEvent = (id, field, value) => {
-    setEvents((prev) =>
-      prev.map((e) => (e._id === id ? { ...e, [field]: value } : e))
-    );
-  };
-
-  const handleSubmitEvent = async (e, id) => {
-    e.preventDefault();
-    const eventToUpdate = events.find((e) => e._id === id);
-    if (!eventToUpdate) return;
-
-    // Only send editable link fields
-    const editableFields = ["preInstagram", "preLinkedin", "preYoutube", "postInstagram", "postLinkedin", "postYoutube"];
-    const payload = {};
-    editableFields.forEach((field) => {
-      payload[field] = eventToUpdate[field]??""; // or "" if backend accepts empty string
-    });
-
-    payload.progressIndex = 5;
-
-    setSavingIds((prev) => [...prev, id]);
-    try {
-      const res = await fetch(`${baseurl}/editevent/${id}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-      });
-
-      if (!res.ok) throw new Error("Failed to update event");
-      const data = await res.json();
-      setEvents((prev) => prev.map((e) => (e._id === id ? data.data : e)));
-    } finally {
-      setSavingIds((prev) => prev.filter((savingId) => savingId !== id));
-      refetchEvents();
-    }
-  };
-
-
   const latest = data[data.length - 1] || {};
   const previous = data[data.length - 2] || {};
 
@@ -165,8 +96,6 @@ const MediaTeamDashboard = () => {
   const linkedinTrend = getTrend(latest.linkedin, previous.linkedin);
   const youtubeTrend = getTrend(latest.youtube, previous.youtube);
   const user = getCred();
-
-  if (loadingEvents) return <p className="p-8">Loading events...</p>;
 
   return (
     <>
@@ -201,8 +130,8 @@ const MediaTeamDashboard = () => {
                 type="submit"
                 disabled={isSubmitting}
                 className={`w-full font-semibold py-2 rounded-lg transition ${isSubmitting
-                    ? "bg-gray-400 cursor-not-allowed text-white"
-                    : "bg-indigo-600 hover:bg-indigo-700 text-white"
+                  ? "bg-gray-400 cursor-not-allowed text-white"
+                  : "bg-indigo-600 hover:bg-indigo-700 text-white"
                   }`}
               >
                 {isSubmitting ? "Saving..." : "Submit Data"}
@@ -264,93 +193,6 @@ const MediaTeamDashboard = () => {
           </>
 
         )}
-
-        {/* Event Forms: display all events without filtering */}
-        <div className="flex flex-col gap-6 w-full px-4 py-6 bg-gray-50 ">
-          <h1 className="text-3xl md:text-4xl font-bold text-gray-800 mb-6 border-b-4 border-indigo-600 pb-2">
-            🎯 All Events
-          </h1>
-          <h3>If you had to face any error in saving the form that has prefilled data, please try to fill all the fields once again and try submit</h3>
-
-          {events.map((event) => {
-            const isSaving = savingIds.includes(event._id);
-
-            return (
-              <form
-                key={event._id}
-                className="bg-white shadow-lg rounded-xl p-6 border border-gray-200 hover:shadow-xl transition-all w-full"
-                onSubmit={(e) => handleSubmitEvent(e, event._id)}
-                noValidate
-              >
-                {/* Header */}
-                <div className="flex flex-col sm:flex-row sm:justify-between  gap-2 mb-4 border-b pb-3 border-gray-100">
-                  <div>
-                    <h1 className="text-2xl font-semibold text-gray-800">{event.eventName}</h1>
-                    <p className="text-sm text-gray-500">
-                      <strong>Organiser:</strong> {event.organiser}
-                    </p>
-                    <p className="text-sm text-gray-500">
-                      <strong>Event Date:</strong> {event.eventDate}
-                    </p>
-                    <p className="text-sm text-gray-500">
-                      <strong>Proposed By:</strong> {event.proposed_by}
-                    </p>
-                  </div>
-                  <div>
-
-                    <div className="flex-shrink-0 w-48 h-48 bg-gray-200 rounded-lg overflow-hidden flex items-center justify-center">
-                      {event.posterWhatsapp ? (
-                        <img
-                          src={event.posterWhatsapp}
-                          alt={event.eventName}
-                          className="object-cover w-full h-full"
-                        />
-                      ) : (
-                        <p className="text-sm text-gray-500 text-center px-2">
-                          The image will be uploaded soon by the design team.
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                </div>
-
-                {/* Inputs Grid */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                  {["preInstagram", "preLinkedin", "preYoutube", "postInstagram", "postLinkedin", "postYoutube"].map((field) => (
-                    <div key={field} className="flex flex-col">
-                      <label className="text-sm font-medium text-gray-600 mb-1">
-                        {field.includes("pre") ? "Pre-" : "Post-"} {field.replace(/pre|post/, "")} Link {field.includes("Youtube") ? "(optional)" : "*"}
-                      </label>
-                      <input
-                        type="url"
-                        name={field}
-                        value={event[field] || ""}
-                        onChange={(e) => handleChangeEvent(event._id, field, e.target.value)}
-                        className="w-full border border-gray-300 px-3 py-2 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-indigo-400 text-sm"
-                        disabled={isSaving}
-                        required={!(field.includes("Youtube") || field.includes("pre"))}
-                      />
-                    </div>
-                  ))}
-                </div>
-
-                {/* Submit Button */}
-                <div className="mt-4 flex justify-end">
-                  <button
-                    type="submit"
-                    disabled={isSaving}
-                    className={`px-6 py-2 rounded-lg font-semibold text-sm transition ${!isSaving
-                        ? "bg-indigo-600 hover:bg-indigo-700 text-white shadow-md hover:shadow-lg"
-                        : "bg-gray-300 text-gray-600 cursor-not-allowed"
-                      }`}
-                  >
-                    {isSaving ? "Saving..." : "Submit"}
-                  </button>
-                </div>
-              </form>
-            );
-          })}
-        </div>
 
       </div>
     </>
