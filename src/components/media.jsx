@@ -9,22 +9,25 @@ import {
   Legend,
   ResponsiveContainer,
 } from "recharts";
-import { ArrowUp, ArrowDown, ArrowLeftRight } from "lucide-react";
-import { getMediaStats } from "../data/bootstrapStore";
+import { ArrowUp, ArrowDown, ArrowLeftRight, Link, Save, Loader2, Calendar, User, Info } from "lucide-react";
+import { getMediaStats, getEvents, refetchEvents } from "../data/bootstrapStore";
 import { getCred } from "./auth/auth";
 import { baseurl } from "../data/url";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 
 const MediaTeamDashboard = () => {
   const [data, setData] = useState([]);
   const [showForm, setShowForm] = useState(false);
   const [formData, setFormData] = useState({ instagram: "", linkedin: "", youtube: "" });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [events, setEvents] = useState([]);
+  const [loadingEvents, setLoadingEvents] = useState(false);
+  const [savingIds, setSavingIds] = useState([]);
 
   const currentMonth = new Date().toLocaleString("default", { month: "long" });
   const currentYear = new Date().getFullYear();
 
-  // Fetch stats (unchanged)
+  // Fetch stats and events
   useEffect(() => {
     const fetchStats = async () => {
       try {
@@ -35,10 +38,31 @@ const MediaTeamDashboard = () => {
           (entry) => entry.month === currentMonth && entry.year === currentYear
         );
         setShowForm(!monthExists);
-      } catch (err) {
+      } catch (err) { }
+    };
+
+    const fetchEvents = async () => {
+      setLoadingEvents(true);
+      try {
+        const data = await getEvents();
+        const pastLimit = new Date();
+        pastLimit.setMonth(pastLimit.getMonth() - 6);
+
+        const recentEvents = data.events.filter(
+          (event) => new Date(event.eventDate) >= pastLimit
+        );
+
+        const sortedEvents = recentEvents.sort(
+          (a, b) => new Date(b.eventDate) - new Date(a.eventDate)
+        );
+        setEvents(sortedEvents);
+      } finally {
+        setLoadingEvents(false);
       }
     };
+
     fetchStats();
+    fetchEvents();
   }, [currentMonth, currentYear]);
 
   const handleChangeStats = (e) => {
@@ -77,6 +101,42 @@ const MediaTeamDashboard = () => {
     }
   };
 
+  const handleChangeEvent = (id, field, value) => {
+    setEvents((prev) =>
+      prev.map((e) => (e._id === id ? { ...e, [field]: value } : e))
+    );
+  };
+
+  const handleSubmitEvent = async (e, id) => {
+    e.preventDefault();
+    const eventToUpdate = events.find((e) => e._id === id);
+    if (!eventToUpdate) return;
+
+    const editableFields = ["preInstagram", "preLinkedin", "preYoutube", "postInstagram", "postLinkedin", "postYoutube"];
+    const payload = {};
+    editableFields.forEach((field) => {
+      payload[field] = eventToUpdate[field] ?? "";
+    });
+
+    payload.progressIndex = 5;
+
+    setSavingIds((prev) => [...prev, id]);
+    try {
+      const res = await fetch(`${baseurl}/editevent/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) throw new Error("Failed to update event");
+      const result = await res.json();
+      setEvents((prev) => prev.map((e) => (e._id === id ? result.data : e)));
+    } finally {
+      setSavingIds((prev) => prev.filter((savingId) => savingId !== id));
+      refetchEvents();
+    }
+  };
+
   const latest = data[data.length - 1] || {};
   const previous = data[data.length - 2] || {};
 
@@ -106,8 +166,8 @@ const MediaTeamDashboard = () => {
           animate={{ opacity: 1, y: 0 }}
           className="mb-12"
         >
-          <h1 className="text-4xl font-extrabold tracking-tight mb-2 font-display">
-            Media Team <span className="text-gradient">Dashboard</span>
+          <h1 className="text-4xl font-extrabold tracking-tight mb-2 font-display text-gradient">
+            Media Team Dashboard
           </h1>
           <p className="text-slate-500 text-lg font-medium">Welcome Back, {user.name} 👋</p>
         </motion.div>
@@ -158,7 +218,6 @@ const MediaTeamDashboard = () => {
             animate={{ opacity: 1 }}
             className="space-y-12"
           >
-            {/* Stats Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
               {[
                 { title: "Instagram Followers", value: latest.instagram, trend: instagramTrend, color: "from-pink-500 to-rose-500", icon: "📸" },
@@ -183,7 +242,6 @@ const MediaTeamDashboard = () => {
               ))}
             </div>
 
-            {/* Monthly Growth Chart */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -216,6 +274,109 @@ const MediaTeamDashboard = () => {
                     <Line type="monotone" dataKey="youtube" stroke="#FF0000" strokeWidth={4} dot={{ r: 6, fill: "#FF0000", strokeWidth: 3, stroke: "#fff" }} activeDot={{ r: 8 }} />
                   </LineChart>
                 </ResponsiveContainer>
+              </div>
+            </motion.div>
+
+            {/* Event Management Section */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              className="space-y-8"
+            >
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-4">
+                  <div className="w-1.5 h-8 bg-rose-500 rounded-full" />
+                  <h2 className="text-3xl font-bold text-slate-800 font-display">Live Event Track</h2>
+                </div>
+                {loadingEvents && <Loader2 className="animate-spin text-slate-400" size={24} />}
+              </div>
+
+              <div className="grid grid-cols-1 gap-8">
+                {events.map((event, idx) => (
+                  <motion.div
+                    key={event._id}
+                    initial={{ opacity: 0, x: -20 }}
+                    whileInView={{ opacity: 1, x: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: idx * 0.1 }}
+                    className="glass-effect rounded-[2.5rem] p-8 border border-white/40 shadow-premium overflow-hidden group"
+                  >
+                    <div className="flex flex-col lg:flex-row gap-8">
+                      {/* Event Info */}
+                      <div className="lg:w-1/3 space-y-4">
+                        <div className="relative aspect-video rounded-3xl overflow-hidden border border-slate-100 shadow-inner group-hover:shadow-indigo-100 transition-all">
+                          {event.posterWhatsapp ? (
+                            <img src={event.posterWhatsapp} alt={event.eventName} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                          ) : (
+                            <div className="w-full h-full bg-slate-50 flex flex-col items-center justify-center p-6 text-center">
+                              <div className="w-12 h-12 bg-white rounded-2xl flex items-center justify-center shadow-sm mb-3">
+                                <Info className="text-slate-300" size={24} />
+                              </div>
+                              <p className="text-xs font-bold text-slate-400 uppercase tracking-widest leading-loose">Asset Pending Design Approval</p>
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="space-y-2">
+                          <h3 className="text-2xl font-black text-slate-800 leading-tight">{event.eventName}</h3>
+                          <div className="flex flex-wrap gap-2">
+                            <span className="inline-flex items-center px-3 py-1 bg-indigo-50 text-indigo-600 rounded-full text-xs font-black uppercase tracking-wider">
+                              <User size={12} className="mr-1.5" /> {event.organiser}
+                            </span>
+                            <span className="inline-flex items-center px-3 py-1 bg-rose-50 text-rose-600 rounded-full text-xs font-black uppercase tracking-wider">
+                              <Calendar size={12} className="mr-1.5" /> {event.eventDate}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Links Form */}
+                      <form onSubmit={(e) => handleSubmitEvent(e, event._id)} className="flex-1">
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-8">
+                          {["preInstagram", "postInstagram", "preLinkedin", "postLinkedin", "preYoutube", "postYoutube"].map((field) => (
+                            <div key={field} className="space-y-2">
+                              <label className="text-xs font-black text-slate-500 uppercase tracking-widest flex items-center">
+                                <Link size={12} className="mr-2" />
+                                {field.includes("pre") ? "Pre-Release" : "Post-Event"} {field.replace(/pre|post/, "")}
+                              </label>
+                              <input
+                                type="url"
+                                value={event[field] || ""}
+                                onChange={(e) => handleChangeEvent(event._id, field, e.target.value)}
+                                className="w-full bg-white/40 border border-slate-200 px-4 py-3 rounded-2xl focus:ring-4 focus:ring-indigo-500/5 focus:border-indigo-400 transition-all outline-none font-semibold text-slate-700 placeholder:text-slate-300"
+                                placeholder="Paste link here..."
+                              />
+                            </div>
+                          ))}
+                        </div>
+
+                        <div className="flex justify-end">
+                          <button
+                            type="submit"
+                            disabled={savingIds.includes(event._id)}
+                            className={`flex items-center space-x-2 px-8 py-3.5 rounded-2xl font-black transition-all shadow-xl hover:scale-[1.02] active:scale-[0.98] ${savingIds.includes(event._id)
+                                ? "bg-slate-100 text-slate-400 cursor-not-allowed shadow-none"
+                                : "premium-gradient text-white shadow-indigo-100"
+                              }`}
+                          >
+                            {savingIds.includes(event._id) ? (
+                              <>
+                                <Loader2 className="animate-spin" size={20} />
+                                <span>Saving...</span>
+                              </>
+                            ) : (
+                              <>
+                                <Save size={20} />
+                                <span>Update Event Track</span>
+                              </>
+                            )}
+                          </button>
+                        </div>
+                      </form>
+                    </div>
+                  </motion.div>
+                ))}
               </div>
             </motion.div>
           </motion.div>
