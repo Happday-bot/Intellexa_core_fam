@@ -4,7 +4,7 @@ import Dashboard from './components/dashboard'
 import Contributions from './components/contribution'
 import Navbar from './components/navbar'
 import Query from './components/query'
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
 import SignIn from './components/signin'
 import SignUp from './components/signup'
 import TechTeams from './components/techteam'
@@ -13,19 +13,28 @@ import DesignTeamDashboard from './components/design'
 import TechLeadForms from './components/techlead'
 import AdminDashboard from './components/admin'
 import BootstrapData from './data/bootstrap'
-import { Navigate } from 'react-router-dom';
-import { getCred } from './components/auth/auth'
+import { useAuth } from './components/auth/authcontext'
 
 function App() {
-  const [auth, setAuth] = useState(() => {return getCred();});
-  const [isReady, setIsReady] = useState(false);  // <-- bootstrap gate
+  const { auth, setAuth, loading: authLoading } = useAuth();
+  const [isReady, setIsReady] = useState(false);
+
+  if (authLoading) {
+    return (
+      <div className="w-full h-screen flex items-center justify-center bg-white">
+        <div className="animate-pulse text-xl font-semibold text-indigo-600">
+          Initializing Auth…
+        </div>
+      </div>
+    );
+  }
 
   return (
     <BootstrapData onReady={() => setIsReady(true)}>
       {!isReady ? (
         <div className="w-full h-screen flex items-center justify-center bg-white">
           <div className="animate-pulse text-xl font-semibold text-indigo-600">
-            Loading…
+            Loading App…
           </div>
         </div>
       ) : (
@@ -34,8 +43,8 @@ function App() {
           <Routes>
             <Route path="/Intellexa_core_fam/" element={<Dashboard />} />
             <Route path="/Intellexa_core_fam/contributions/teams" element={<Contributions />} />
-            <Route path="/Intellexa_core_fam/query" element={<Query />}/>
-            <Route path="/Intellexa_core_fam/signin" element={<SignIn setAuth={setAuth} />} />
+            <Route path="/Intellexa_core_fam/query" element={<Query />} />
+            <Route path="/Intellexa_core_fam/signin" element={<SignIn />} />
             <Route path="/Intellexa_core_fam/signup" element={<SignUp />} />
 
             {auth && auth.team === "Media" && <Route path="/Intellexa_core_fam/mediateam" element={<MediaTeamDashboard />} />}
@@ -49,7 +58,7 @@ function App() {
               </>
             )}
 
-            <Route path="*" element={<Navigate to="/Intellexa_core_fam/"/>}/>
+            <Route path="*" element={<Navigate to="/Intellexa_core_fam/" />} />
           </Routes>
         </Router>
       )}

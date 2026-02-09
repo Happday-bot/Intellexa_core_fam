@@ -1,13 +1,12 @@
-import React, { useState, useEffect } from "react";
-import { Users, Calendar, MessageSquare } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { getCred } from "./auth/auth";
-import { getEvents, getUsers, refetchEvents, refetchUsers } from "../data/bootstrapStore";
+import { getEvents, getUsers, refetchEvents, refetchUsers, subscribe } from "../data/bootstrapStore";
 import { baseurl } from "../data/url";
+import { useAuth } from "./auth/authcontext";
 
 // ================= Sidebar =================
 const Sidebar = ({ selectedTab, setSelectedTab, pendingQueries }) => {
-  const login_name = getCred().name;
+  const { auth } = useAuth();
+  const login_name = auth?.name || "Admin";
   const tabs = [
     { id: "users", label: "Members", icon: <Users size={20} /> },
     { id: "events", label: "Events", icon: <Calendar size={20} /> },
@@ -73,20 +72,18 @@ const MembersTab = () => {
     "Yet to be set",
   ]);
 
- const loadUsers = async () => {
-    try {
-      const data = getUsers();
-      setUsers(data.users);   // your state setter
-      console.log("Users loaded:", data);
-    } catch (err) {
-      console.error("User fetch failed:", err);
+  const loadUsers = useCallback(() => {
+    const data = getUsers();
+    if (data?.users) {
+      setUsers(data.users);
     }
-  };
-  
-useEffect(() => {
-  loadUsers();
-}, []);
-  
+  }, []);
+
+  useEffect(() => {
+    loadUsers();
+    return subscribe(loadUsers);
+  }, [loadUsers]);
+
 
   // Handle role/team changes locally
   const handleRoleChange = (id, role) => {
@@ -108,10 +105,11 @@ useEffect(() => {
       const res = await fetch(`${baseurl}/user/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({ role: updatedRole, team: updatedTeam }),
       });
       if (!res.ok) throw new Error("Failed to update user");
-    }finally {
+    } finally {
       setLoadingId(null);
       refetchUsers();
     }
@@ -124,6 +122,7 @@ useEffect(() => {
     try {
       const res = await fetch(`${baseurl}/del/user/${id}`, {
         method: "DELETE",
+        credentials: "include"
       });
       if (!res.ok) throw new Error("Failed to delete user");
       setUsers(users.filter((u) => u._id !== id));
@@ -282,6 +281,7 @@ const EventsTab = () => {
       const res = await fetch(`${baseurl}/editevent/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({
           marketingFile: eventToUpdate.marketingFile,
           venue: eventToUpdate.venue,
@@ -307,7 +307,7 @@ const EventsTab = () => {
     const newIndex = currentProgressIndex + delta;
 
     // Guardrail validation
-    if (newIndex < 0 || newIndex>7) return;
+    if (newIndex < 0 || newIndex > 7) return;
 
     setSavingIds(prev => [...prev, id]);
 
@@ -318,7 +318,8 @@ const EventsTab = () => {
       try {
         await fetch(`${baseurl}/stats/events/increment`, {
           method: "GET",
-          headers: { "Content-Type": "application/json" }
+          headers: { "Content-Type": "application/json" },
+          credentials: "include"
         });
       } catch (err) {
       }
@@ -328,6 +329,7 @@ const EventsTab = () => {
       const res = await fetch(`${baseurl}/editevent/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify(payload),
       });
 
@@ -351,6 +353,7 @@ const EventsTab = () => {
       const res = await fetch(`${baseurl}/suggest/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({ suggestion }),
       });
       if (!res.ok) throw new Error("Failed to submit suggestion");
@@ -363,22 +366,17 @@ const EventsTab = () => {
     }
   };
 
-  useEffect(() => {
-    const fetchEvents = async () => {
-      try {
-        const user_info = getCred();
-        if (!user_info) {
-          return;
-        }
-
-        const data = await getEvents();
-        setEvents(data.events || []);
-      }finally {
-        setLoading(false);
-      }
-    };
-    fetchEvents();
+  const loadEvents = useCallback(() => {
+    const data = getEvents();
+    if (data?.events) {
+      setEvents(data.events);
+    }
   }, []);
+
+  useEffect(() => {
+    loadEvents();
+    return subscribe(loadEvents);
+  }, [loadEvents]);
 
   const categorize = (status) =>
     events.filter(
@@ -766,33 +764,30 @@ const EventsTab = () => {
 const QueriesTab = ({ setPendingQueries }) => {
   const [queries, setQueries] = useState([]);
   const [solutions, setSolutions] = useState({});
-  const adminName = getCred().name;
+  const { auth } = useAuth();
+  const adminName = auth?.name || "Admin";
 
   useEffect(() => {
     const fetchQueries = async () => {
       try {
-        const user_info = getCred();
-        if (!user_info) {
-          return;
-        }
-
         const res = await fetch(`${baseurl}/queries`, {
           method: "GET",
+          credentials: "include",
           headers: {
             "Content-Type": "application/json",
-            "X-User": JSON.stringify(user_info), // sending credentials as header
           },
         });
         const data = await res.json();
 
-        const sorted = data.queries.sort((a, b) =>
+        const sorted = (data.queries || []).sort((a, b) =>
           a.addressed ? 1 : b.addressed ? -1 : 0
         );
 
-        setQueries(sorted || []);
+        setQueries(sorted);
         const pendingCount = sorted.filter((q) => !q.addressed).length;
         setPendingQueries(pendingCount);
       } catch (err) {
+        console.error("Failed to fetch queries", err);
       }
     };
     fetchQueries();
@@ -810,6 +805,7 @@ const QueriesTab = ({ setPendingQueries }) => {
       const res = await fetch(`${baseurl}/address_query/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({ solution, addressed_by: adminName }),
       });
 
@@ -908,16 +904,11 @@ const AdminDashboard = () => {
   useEffect(() => {
     const fetchPendingQueries = async () => {
       try {
-        const user_info = getCred();
-        if (!user_info) {
-          return;
-        }
-
         const res = await fetch(`${baseurl}/queries`, {
           method: "GET",
+          credentials: "include",
           headers: {
             "Content-Type": "application/json",
-            "X-User": JSON.stringify(user_info), // sending credentials as header
           },
         });
         const data = await res.json();
@@ -932,11 +923,14 @@ const AdminDashboard = () => {
   }, []); // runs only once at initial render
 
   const renderTab = () => {
+    const userRole = auth?.role;
+    const userTeam = auth?.team;
+
     switch (selectedTab) {
       case "users":
-        return getCred().team === "Intellexa" ?<MembersTab />:<DeniedTab/>;
+        return userTeam === "Intellexa" ? <MembersTab /> : <DeniedTab />;
       case "events":
-        return <EventsTab />
+        return <EventsTab />;
       case "queries":
         return <QueriesTab setPendingQueries={setPendingQueries} />;
       default:

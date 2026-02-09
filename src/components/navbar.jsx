@@ -1,11 +1,12 @@
 import { Link, useNavigate } from "react-router-dom";
 import { HashLink } from "react-router-hash-link";
 import { useState, useEffect } from "react";
-import { __setCred } from "./auth/auth";
 import { baseurl } from "../data/url";
 import { motion, AnimatePresence } from "framer-motion";
+import { useAuth } from "./auth/authcontext";
 
-export default function Navbar({ auth, setAuth }) {
+export default function Navbar() {
+  const { auth, setAuth } = useAuth();
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
@@ -20,17 +21,13 @@ export default function Navbar({ auth, setAuth }) {
 
   const loggingout = async () => {
     try {
-      if (!auth || !auth.passkey) {
-        __setCred(null);
-        setAuth(null);
-        navigate("/Intellexa_core_fam/");
-        return;
+      if (auth) {
+        await fetch(`${baseurl}/logout`, {
+          method: "POST",
+          credentials: "include"
+        });
       }
-      await fetch(`${baseurl}/logout?passkey=${auth.passkey}`, {
-        method: "POST",
-      });
     } finally {
-      __setCred(null);
       setAuth(null);
       navigate("/Intellexa_core_fam/");
     }

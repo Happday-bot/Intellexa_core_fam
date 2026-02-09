@@ -11,7 +11,7 @@ import {
 } from "recharts";
 import { Loader2, Upload, FileText, Image, CheckCircle, ExternalLink, Calendar, User, Save } from "lucide-react";
 import { getDesignStats, getEvents, refetchEvents } from "../data/bootstrapStore";
-import { getCred } from "./auth/auth";
+import { useAuth } from "./auth/authcontext";
 import { baseurl } from "../data/url";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -28,41 +28,23 @@ const DesignTeamDashboard = () => {
   const currentYear = new Date().getFullYear();
 
   // Fetch Stats and Events
-  useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        const result = getDesignStats();
-        setData(result.stats);
+  const currentMonth = new Date().toLocaleString("default", { month: "long" });
+  const currentYear = new Date().getFullYear();
 
-        const monthExists = result.stats?.some(
+  useEffect(() => {
+    const update = () => {
+      const stats = getDesignStats();
+      if (stats?.stats) {
+        setData(stats.stats);
+        const monthExists = stats.stats.some(
           (entry) => entry.month === currentMonth && entry.year === currentYear
         );
         setShowForm(!monthExists);
-      } catch (err) { }
-    };
-
-    const fetchEvents = async () => {
-      setLoadingEvents(true);
-      try {
-        const data = await getEvents();
-        const pastLimit = new Date();
-        pastLimit.setMonth(pastLimit.getMonth() - 6);
-
-        const recentEvents = data.events.filter(
-          (event) => new Date(event.eventDate) >= pastLimit
-        );
-
-        const sortedEvents = recentEvents.sort(
-          (a, b) => new Date(b.eventDate) - new Date(a.eventDate)
-        );
-        setEvents(sortedEvents);
-      } finally {
-        setLoadingEvents(false);
       }
+      setEvents(getEvents() || []);
     };
-
-    fetchStats();
-    fetchEvents();
+    update();
+    return subscribe(update);
   }, [currentMonth, currentYear]);
 
   const handleChangeStats = (e) => {
@@ -149,7 +131,7 @@ const DesignTeamDashboard = () => {
     }
   };
 
-  const user = getCred();
+  const { auth: user } = useAuth();
 
   return (
     <div className="min-h-screen pb-20">
@@ -299,8 +281,8 @@ const DesignTeamDashboard = () => {
                           target={hasLink ? "_blank" : undefined}
                           rel="noreferrer"
                           className={`flex items-center justify-center space-x-2 p-4 rounded-3xl transition-all border font-black text-sm ${hasLink
-                              ? "bg-white border-slate-100 text-slate-600 hover:border-indigo-200 hover:shadow-lg hover:shadow-indigo-50 text-indigo-600"
-                              : "bg-slate-50 border-transparent text-slate-300 cursor-not-allowed"
+                            ? "bg-white border-slate-100 text-slate-600 hover:border-indigo-200 hover:shadow-lg hover:shadow-indigo-50 text-indigo-600"
+                            : "bg-slate-50 border-transparent text-slate-300 cursor-not-allowed"
                             }`}
                         >
                           {resource.icon}
@@ -347,8 +329,8 @@ const DesignTeamDashboard = () => {
                       onClick={() => handleSubmitEvent(event._id)}
                       disabled={savingIds.includes(event._id)}
                       className={`flex items-center space-x-3 px-10 py-4 rounded-[2rem] font-black tracking-widest uppercase text-sm transition-all shadow-xl hover:scale-[1.02] active:scale-[0.98] ${savingIds.includes(event._id)
-                          ? "bg-slate-100 text-slate-400 cursor-not-allowed shadow-none"
-                          : "premium-gradient text-white shadow-fuchsia-100"
+                        ? "bg-slate-100 text-slate-400 cursor-not-allowed shadow-none"
+                        : "premium-gradient text-white shadow-fuchsia-100"
                         }`}
                     >
                       {savingIds.includes(event._id) ? (

@@ -1,19 +1,36 @@
 import { createContext, useContext, useState, useEffect } from "react";
-import { getCred } from "../auth/auth";
+import { baseurl } from "../../data/url";
 
 const AuthContext = createContext();
 
-export const AuthProvider = () => {
+export const AuthProvider = ({ children }) => {
   const [auth, setAuth] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    try {
-      const raw = getCred();
-      setAuth(raw ? JSON.parse(raw) : null);
-    } catch {
-      setAuth(null);
-    }
+    const checkAuth = async () => {
+      try {
+        const res = await fetch(`${baseurl}/me`, { credentials: "include" });
+        if (res.ok) {
+          const user = await res.json();
+          setAuth(user);
+        } else {
+          setAuth(null);
+        }
+      } catch {
+        setAuth(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+    checkAuth();
   }, []);
+
+  return (
+    <AuthContext.Provider value={{ auth, setAuth, loading }}>
+      {children}
+    </AuthContext.Provider>
+  );
 };
 
 export const useAuth = () => useContext(AuthContext);

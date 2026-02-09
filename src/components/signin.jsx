@@ -1,11 +1,11 @@
- import React, { useState } from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { __setCred } from "./auth/auth";
-import { refetchEvents, refetchUsers } from "../data/bootstrapStore";
+import { refetchEvents, refetchUsers, refetchStats, refetchMediaStats, refetchDesignStats, refetchEventStats } from "../data/bootstrapStore";
 import { baseurl } from "../data/url";
+import { useAuth } from "./auth/authcontext";
 
-
-export default function SignIn({ setAuth }) {
+export default function SignIn() {
+  const { setAuth } = useAuth();
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -21,84 +21,84 @@ export default function SignIn({ setAuth }) {
   };
 
   const handleSubmit = async (e) => {
-  e.preventDefault();
+    e.preventDefault();
 
-  if (!formData.email || !formData.password) {
-    setError("Both fields are required.");
-    return;
-  }
-
-  setLoading(true);
-  setError("");
-  setSuccess(false);
-
-  try {
-    const res = await fetch(`${baseurl}/login`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        email: formData.email,
-        password: formData.password
-      })
-    });
-
-    if (!res.ok) {
-      const errData = await res.json();
-      throw new Error(errData.detail || "Login failed");
+    if (!formData.email || !formData.password) {
+      setError("Both fields are required.");
+      return;
     }
 
-    const data = await res.json();
-sessionStorage.setItem("user", JSON.stringify(data.user));
-__setCred(data.user);
-setAuth(data.user);
-refetchEvents();
-refetchUsers();
-setSuccess(true);
-setFormData({ email: "", password: "" });
-
-setTimeout(() => {
-  if (data.user.role === "Technical Lead" && data.user.team === "Intellexa") {
-    navigate("/Intellexa_core_fam/techlead");
-  } 
-  else if (
-    ((data.user.role === "Faculty Coordinator" || data.user.role === "Vice President" || data.user.role === "President") && data.user.team === "Intellexa") ||
-    ((data.user.role === "Lead" || data.user.role === "Co-Lead" || data.user.role === "Core Member") && data.user.team === "Event")
-  ) {
-    navigate("/Intellexa_core_fam/admin");
-  } 
-  else if (
-    (data.user.role === "Lead" || data.user.role === "Co-Lead" || data.user.role === "Core Member") &&
-    data.user.team === "Media"
-  ) {
-    navigate("/Intellexa_core_fam/mediateam");
-  } 
-  else if (
-    (data.user.role === "Lead" || data.user.role === "Co-Lead" || data.user.role === "Core Member") &&
-    data.user.team === "Design"
-  ) {
-    navigate("/Intellexa_core_fam/designteam");
-  } 
-  else if (
-    (data.user.role === "Lead" || data.user.role === "Co-Lead" || data.user.role === "Core Member") &&
-    ["AI", "App", "Web", "Backend", "Info Sec", "IOT"].includes(data.user.team)
-  ) {
-    navigate("/Intellexa_core_fam/techteams");
-  } 
-  else {
+    setLoading(true);
+    setError("");
     setSuccess(false);
-    setError("Access denied: Mismatch in role or team. Contact admin.");
-  }
-}, 1500);
 
-    
-  } catch (err) {
-    setError(err.message);
-  } finally {
-    setLoading(false);
-  }
-};
+    try {
+      const res = await fetch(`${baseurl}/login`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        credentials: "include", // Enable cookie storage
+        body: JSON.stringify({
+          email: formData.email,
+          password: formData.password
+        })
+      });
+
+      if (!res.ok) {
+        const errData = await res.json();
+        throw new Error(errData.detail || "Login failed");
+      }
+
+      const data = await res.json();
+      setAuth(data.user);
+
+      // Trigger proactive data refresh
+      await Promise.all([
+        refetchEvents(),
+        refetchUsers(),
+        refetchStats(),
+        refetchMediaStats(),
+        refetchDesignStats(),
+        refetchEventStats()
+      ]);
+
+      setSuccess(true);
+      setFormData({ email: "", password: "" });
+
+      setTimeout(() => {
+        const { role, team } = data.user;
+        if (role === "Technical Lead" && team === "Intellexa") {
+          navigate("/Intellexa_core_fam/techlead");
+        } else if (
+          ((role === "Faculty Coordinator" || role === "Vice President" || role === "President") && team === "Intellexa") ||
+          ((role === "Lead" || role === "Co-Lead" || role === "Core Member") && team === "Event")
+        ) {
+          navigate("/Intellexa_core_fam/admin");
+        } else if (
+          (role === "Lead" || role === "Co-Lead" || role === "Core Member") && team === "Media"
+        ) {
+          navigate("/Intellexa_core_fam/mediateam");
+        } else if (
+          (role === "Lead" || role === "Co-Lead" || role === "Core Member") && team === "Design"
+        ) {
+          navigate("/Intellexa_core_fam/designteam");
+        } else if (
+          (role === "Lead" || role === "Co-Lead" || role === "Core Member") &&
+          ["AI", "App", "Web", "Backend", "Info Sec", "IOT"].includes(team)
+        ) {
+          navigate("/Intellexa_core_fam/techteams");
+        } else {
+          setSuccess(false);
+          setError("Access denied: Mismatch in role or team. Contact admin.");
+        }
+      }, 1500);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
 
 
   return (
@@ -155,11 +155,10 @@ setTimeout(() => {
             <button
               type="submit"
               disabled={loading}
-              className={`w-full ${
-                loading
+              className={`w-full ${loading
                   ? "bg-gray-400 cursor-not-allowed"
                   : "bg-gradient-to-r from-indigo-600 to-purple-600 hover:opacity-90"
-              } text-white py-2 rounded-lg font-semibold transition-all duration-300`}
+                } text-white py-2 rounded-lg font-semibold transition-all duration-300`}
             >
               {loading ? "Signing In..." : "Sign In"}
             </button>

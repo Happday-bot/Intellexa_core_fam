@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from "react";
-import { getEvents,refetchEvents } from "../data/bootstrapStore";
-import { getCred } from "./auth/auth";
+import { getEvents, refetchEvents } from "../data/bootstrapStore";
+import { useAuth } from "./auth/authcontext";
 import { baseurl } from "../data/url";
 
 const TechLeadForms = () => {
+  const { auth: user } = useAuth();
   const [events, setEvents] = useState([]);
   const [loading, setLoading] = useState(true);
   const [savingIds, setSavingIds] = useState([]); // <-- Track saving events
@@ -11,13 +12,12 @@ const TechLeadForms = () => {
 
   // Fetch all events
   useEffect(() => {
-    const fetchEvents = async () => {
-      try {
-        const data = getEvents();
+    const fetchEvents = () => {
+      const data = getEvents();
+      if (data?.events) {
         setEvents(data.events);
-      } finally {
-        setLoading(false);
       }
+      setLoading(false);
     };
     fetchEvents();
   }, []);
@@ -52,11 +52,12 @@ const TechLeadForms = () => {
       const res = await fetch(`${baseurl}/editevent/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({
           formLink: event.formLink,
           meetLink: event.meetLink,
           submitted: true,
-          progressIndex:2
+          progressIndex: 2
         }),
       });
 
@@ -81,8 +82,8 @@ const TechLeadForms = () => {
         ? "Updating..."
         : "Update Links"
       : isSaving
-      ? "Submitting..."
-      : "Submit Links";
+        ? "Submitting..."
+        : "Submit Links";
 
     return (
       <div
@@ -145,11 +146,10 @@ const TechLeadForms = () => {
           <button
             onClick={() => handleSubmit(event._id)}
             disabled={!editable || isSaving}
-            className={`w-full py-2 rounded-lg font-semibold transition-all ${
-              editable && !isSaving
-                ? "bg-indigo-600 hover:bg-indigo-700 text-white"
-                : "bg-gray-300 text-gray-600 cursor-not-allowed"
-            }`}
+            className={`w-full py-2 rounded-lg font-semibold transition-all ${editable && !isSaving
+              ? "bg-indigo-600 hover:bg-indigo-700 text-white"
+              : "bg-gray-300 text-gray-600 cursor-not-allowed"
+              }`}
           >
             {buttonLabel}
           </button>
@@ -171,14 +171,14 @@ const TechLeadForms = () => {
       </div>
     );
 
-  const user = getCred();
+  const adminName = user?.name || "Tech Lead";
 
-  return (  
+  return (
     <div className="min-h-screen bg-gray-50 p-8">
       <h1 className="text-3xl font-bold text-gray-800 mb-6">
         📝 Tech Lead Event Forms
       </h1>
-      <h2 className="text-2xl font-bold text-gray-800 mb-6">Welcome Back, {user.name} 👋</h2>
+      <h2 className="text-2xl font-bold text-gray-800 mb-6">Welcome Back, {adminName} 👋</h2>
 
       {/* Submittable */}
       {submittableEvents.length > 0 && (
@@ -220,4 +220,3 @@ const TechLeadForms = () => {
 };
 
 export default TechLeadForms;
-

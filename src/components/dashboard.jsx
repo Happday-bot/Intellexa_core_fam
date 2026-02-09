@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import MediaStatsGraph from "./mediastat.jsx";
 import DesignStats from "./designstat.jsx";
 import EventStatsGraph from "./eventstat.jsx";
-import { getstats } from "../data/bootstrapStore.js";
+import { getstats, subscribe } from "../data/bootstrapStore.js";
 import { motion } from "framer-motion";
 
 export default function Dashboard() {
@@ -15,14 +15,21 @@ export default function Dashboard() {
   });
 
   useEffect(() => {
-    const data = getstats();
-    setCounts({
-      total: data.total_events || 0,
-      completed: data.completed || 0,
-      youtube: data.youtube || 0,
-      insta: data.insta || 0,
-      linkedin: data.linkedin || 0
-    });
+    const update = () => {
+      const data = getstats();
+      if (data) {
+        setCounts({
+          total: data.total_events || 0,
+          completed: data.completed || 0,
+          youtube: data.youtube || 0,
+          insta: data.insta || 0,
+          linkedin: data.linkedin || 0
+        });
+      }
+    };
+
+    update();
+    return subscribe(update); // Subscribe to changes
   }, []);
 
   const stats = [

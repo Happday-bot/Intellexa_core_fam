@@ -2,15 +2,15 @@ import React, { useState, useEffect } from "react";
 import Navbar from "./navbar";
 import Addeventform from "./addeventform";
 import EditEventForm from "./editeventform";
-import { getEvents, refetchEvents} from "../data/bootstrapStore";
-import { getCred } from "./auth/auth";
+import { getEvents, refetchEvents } from "../data/bootstrapStore";
 import { baseurl } from "../data/url";
+import { useAuth } from "./auth/authcontext";
 
-
-const TechTeams = ({ user }) => {
+const TechTeams = () => {
+  const { auth: user_info } = useAuth();
+  const login_name = user_info || { name: "User", team: "None", role: "None" };
   const [events, setEvents] = useState([]);
   const [showForm, setShowForm] = useState(false);
-  const login_name = getCred();
   const [newEvent, setNewEvent] = useState({
     _id: "",
     eventName: "",
@@ -33,24 +33,20 @@ const TechTeams = ({ user }) => {
   });
 
   useEffect(() => {
-    const fetchEvents = async () => {
-      try {
-        const user_info = getCred();
-        if (!user_info) {
-          return;
-        }
-        const data = getEvents();
+    const fetchEvents = () => {
+      const data = getEvents();
+      if (data?.events) {
         // Sort events by contributedDate (descending: newest first)
-        const sortedEvents = data.events.sort(
+        const sortedEvents = [...data.events].sort(
           (a, b) => new Date(b.contributedDate) - new Date(a.contributedDate)
         );
-
         setEvents(sortedEvents);
-      } catch (error) {
       }
     };
 
     fetchEvents();
+    // In a fully reactive store, we should subscribe here too if we want live updates
+    // but the parent BootstrapData/refetch logic usually handles the initial load.
   }, []);
 
   const tracks = [
@@ -94,6 +90,7 @@ const TechTeams = ({ user }) => {
       // ✅ POST to backend
       const response = await fetch(`${baseurl}/add_event`, {
         method: "POST",
+        credentials: "include",
         headers: {
           "Content-Type": "application/json",
         },
@@ -163,10 +160,10 @@ const TechTeams = ({ user }) => {
                     <strong>Status:</strong>{" "}
                     <span
                       className={`px-2 py-1 rounded font-medium ${event.status === "completed"
-                          ? "bg-green-200 text-green-700"
-                          : event.status === "ongoing"
-                            ? "bg-yellow-200 text-yellow-700"
-                            : "bg-red-200 text-red-700"
+                        ? "bg-green-200 text-green-700"
+                        : event.status === "ongoing"
+                          ? "bg-yellow-200 text-yellow-700"
+                          : "bg-red-200 text-red-700"
                         }`}
                     >
                       {event.status}
@@ -228,14 +225,14 @@ const TechTeams = ({ user }) => {
                         >
                           <div
                             className={`w-6 h-6 rounded-full ${index <= event.progressIndex
-                                ? "bg-indigo-600"
-                                : "bg-gray-300"
+                              ? "bg-indigo-600"
+                              : "bg-gray-300"
                               }`}
                           ></div>
                           <p
                             className={`text-xs mt-2 ${index <= event.progressIndex
-                                ? "text-indigo-600"
-                                : "text-gray-500"
+                              ? "text-indigo-600"
+                              : "text-gray-500"
                               }`}
                           >
                             {track}

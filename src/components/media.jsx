@@ -10,8 +10,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { ArrowUp, ArrowDown, ArrowLeftRight, Link, Save, Loader2, Calendar, User, Info } from "lucide-react";
-import { getMediaStats, getEvents, refetchEvents } from "../data/bootstrapStore";
-import { getCred } from "./auth/auth";
+import { getMediaStats, getEvents, refetchEvents, refetchStats, subscribe } from "../data/bootstrapStore";
 import { baseurl } from "../data/url";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -27,42 +26,20 @@ const MediaTeamDashboard = () => {
   const currentMonth = new Date().toLocaleString("default", { month: "long" });
   const currentYear = new Date().getFullYear();
 
-  // Fetch stats and events
   useEffect(() => {
-    const fetchStats = async () => {
-      try {
-        const result = getMediaStats();
-        setData(result.stats);
-
-        const monthExists = result.stats?.some(
+    const update = () => {
+      const stats = getMediaStats();
+      if (stats?.stats) {
+        setData(stats.stats);
+        const monthExists = stats.stats.some(
           (entry) => entry.month === currentMonth && entry.year === currentYear
         );
         setShowForm(!monthExists);
-      } catch (err) { }
-    };
-
-    const fetchEvents = async () => {
-      setLoadingEvents(true);
-      try {
-        const data = await getEvents();
-        const pastLimit = new Date();
-        pastLimit.setMonth(pastLimit.getMonth() - 6);
-
-        const recentEvents = data.events.filter(
-          (event) => new Date(event.eventDate) >= pastLimit
-        );
-
-        const sortedEvents = recentEvents.sort(
-          (a, b) => new Date(b.eventDate) - new Date(a.eventDate)
-        );
-        setEvents(sortedEvents);
-      } finally {
-        setLoadingEvents(false);
       }
+      setEvents(getEvents() || []);
     };
-
-    fetchStats();
-    fetchEvents();
+    update();
+    return subscribe(update);
   }, [currentMonth, currentYear]);
 
   const handleChangeStats = (e) => {
@@ -86,15 +63,16 @@ const MediaTeamDashboard = () => {
     };
 
     try {
-      const res = await fetch(`${baseurl}/stats/media/add`, {
+      const response = await fetch(`${baseurl}/stats/media/add`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(newEntry),
+        credentials: "include"
       });
-      if (!res.ok) throw new Error("Failed to submit stat");
+      if (!response.ok) throw new Error("Failed to submit stat");
 
-      const response = await res.json();
-      setData(response.updated_data.stat);
+      const result = await response.json();
+      setData(result.updated_data.stat);
       setShowForm(false);
     } finally {
       setIsSubmitting(false);
@@ -122,18 +100,23 @@ const MediaTeamDashboard = () => {
 
     setSavingIds((prev) => [...prev, id]);
     try {
-      const res = await fetch(`${baseurl}/editevent/${id}`, {
+      const response = await fetch(`${baseurl}/editevent/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
+        credentials: "include"
       });
 
-      if (!res.ok) throw new Error("Failed to update event");
-      const result = await res.json();
-      setEvents((prev) => prev.map((e) => (e._id === id ? result.data : e)));
+      if (response.ok) {
+        const result = await response.json();
+        setEvents((prev) => prev.map((e) => (e._id === id ? result.data : e)));
+        await refetchEvents();
+        await refetchStats(); // SYNC MAIN DASHBOARD
+      } else {
+        throw new Error("Failed to update event");
+      }
     } finally {
       setSavingIds((prev) => prev.filter((savingId) => savingId !== id));
-      refetchEvents();
     }
   };
 
@@ -156,7 +139,7 @@ const MediaTeamDashboard = () => {
   const instagramTrend = getTrend(latest.instagram, previous.instagram);
   const linkedinTrend = getTrend(latest.linkedin, previous.linkedin);
   const youtubeTrend = getTrend(latest.youtube, previous.youtube);
-  const user = getCred();
+  const { auth: user } = useAuth();
 
   return (
     <div className="min-h-screen pb-20">
@@ -356,8 +339,8 @@ const MediaTeamDashboard = () => {
                             type="submit"
                             disabled={savingIds.includes(event._id)}
                             className={`flex items-center space-x-2 px-8 py-3.5 rounded-2xl font-black transition-all shadow-xl hover:scale-[1.02] active:scale-[0.98] ${savingIds.includes(event._id)
-                                ? "bg-slate-100 text-slate-400 cursor-not-allowed shadow-none"
-                                : "premium-gradient text-white shadow-indigo-100"
+                              ? "bg-slate-100 text-slate-400 cursor-not-allowed shadow-none"
+                              : "premium-gradient text-white shadow-indigo-100"
                               }`}
                           >
                             {savingIds.includes(event._id) ? (
