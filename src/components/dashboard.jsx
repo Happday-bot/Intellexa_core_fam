@@ -1,208 +1,204 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import MediaStatsGraph from "./mediastat.jsx";
 import DesignStats from "./designstat.jsx";
 import EventStatsGraph from "./eventstat.jsx";
-import { baseurl } from "../data/url.js";
 import { getstats } from "../data/bootstrapStore.js";
-
+import { motion } from "framer-motion";
 
 export default function Dashboard() {
-  const [eventCount, setEventCount] = useState(0);
-  const [completedevent, setCompletedEvent] = useState(0);
-  const [youtube, setyoutube] = useState(0);
-  const [insta, setinsta] = useState(0);
-  const [linkedin, setlinkedin] = useState(0);
-  const chartRef = useRef(null);
-
-  // Fetch total event count from backend
-  useEffect(() => {
-      let data = getstats();
-        setEventCount(data.total_events);
-        setCompletedEvent(data.completed);
-        setyoutube(data.youtube);
-        setinsta(data.insta);
-        setlinkedin(data.linkedin);
-  }, []);
-
-  // Dashboard colors
-  const config = {
-    primary_color: "#89ade0ff",
-    background_color: "#4d63c5ff",
-  };
-
-  // Line chart data
-  const data = {
-    labels: ["Jan", "Feb", "Mar", "Apr", "May", "Jun"],
-    datasets: [
-      {
-        label: "Events Completed",
-        data: [5, 8, 10, 7, 12, 15],
-        borderColor: config.primary_color,
-        backgroundColor: `${config.primary_color}20`,
-        borderWidth: 3,
-        fill: true,
-        tension: 0.4,
-        pointRadius: 6,
-        pointHoverRadius: 8,
-        pointBackgroundColor: "#ffffff",
-        pointBorderWidth: 3,
-      },
-    ],
-  };
-
-  // Chart options
-  const options = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: { display: false },
-      tooltip: {
-        backgroundColor: "rgba(0,0,0,0.8)",
-        padding: 12,
-        cornerRadius: 8,
-        titleFont: { size: 14, weight: "bold" },
-        bodyFont: { size: 13 },
-      },
-    },
-    scales: {
-      y: { beginAtZero: true, grid: { color: "rgba(0,0,0,0.05)" } },
-      x: { grid: { display: false } },
-    },
-  };
+  const [counts, setCounts] = useState({
+    total: 0,
+    completed: 0,
+    youtube: 0,
+    insta: 0,
+    linkedin: 0
+  });
 
   useEffect(() => {
-    document.body.style.background = `linear-gradient(to bottom right, ${config.background_color}, white, ${config.background_color})`;
+    const data = getstats();
+    setCounts({
+      total: data.total_events || 0,
+      completed: data.completed || 0,
+      youtube: data.youtube || 0,
+      insta: data.insta || 0,
+      linkedin: data.linkedin || 0
+    });
   }, []);
 
-  // Stats section cards
   const stats = [
-    { title: "Total Events", value: eventCount || "0", growth: "↑ 12%", color: "indigo" },
-    { title: "Completed Events", value: completedevent || "0", growth: "↑ 12%", color: "indigo" },
-    { title: "Pending Events", value: eventCount - completedevent || "0", growth: "↑ 12%", color: "indigo" },
-    { title: "Whatsapp Members", value: "4171", growth: "↑ 5%", color: "blue" },
-    { title: "Insta Followers", value: insta, growth: "↑ 5%", color: "yellow" },
-    { title: "LinkedIn Followers", value: linkedin, growth: "↑ 5%", color: "violet" },
-    { title: "YouTube Followers", value: youtube, growth: "↑ 5%", color: "pink" },
+    { title: "Total Events", value: counts.total, icon: "🎯", color: "from-blue-500 to-indigo-600" },
+    { title: "Completed", value: counts.completed, icon: "✅", color: "from-emerald-500 to-teal-600" },
+    { title: "Pending", value: counts.total - counts.completed, icon: "⏳", color: "from-amber-500 to-orange-600" },
+    { title: "WhatsApp Members", value: "4171+", icon: "💬", color: "from-green-500 to-emerald-600" },
+    { title: "Insta Followers", value: counts.insta, icon: "📸", color: "from-pink-500 to-rose-600" },
+    { title: "LinkedIn Followers", value: counts.linkedin, icon: "💼", color: "from-sky-500 to-blue-600" },
+    { title: "YouTube Subs", value: counts.youtube, icon: "🎥", color: "from-red-500 to-rose-600" },
   ];
 
-  return (
-    <div className="min-h-full font-sans">
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: { staggerChildren: 0.1 }
+    }
+  };
 
-      <div id="overview" className="max-w-9xl mx-auto px-6 py-10 space-y-8">
-        {/* === STATS SECTION === */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-3 gap-6">
+  const itemVariants = {
+    hidden: { y: 20, opacity: 0 },
+    visible: { y: 0, opacity: 1 }
+  };
+
+  return (
+    <div className="min-h-screen pb-20">
+      <div className="max-w-7xl mx-auto px-6 py-12">
+
+        {/* Header Section */}
+        <motion.div
+          initial={{ opacity: 0, x: -20 }}
+          animate={{ opacity: 1, x: 0 }}
+          className="mb-12"
+        >
+          <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight mb-4 font-display">
+            Dashboard <span className="text-gradient">Overview</span>
+          </h1>
+          <p className="text-slate-500 text-lg max-w-2xl font-medium">
+            Project and team performance metrics at a glance. Real-time data visualization and growth tracking.
+          </p>
+        </motion.div>
+
+        {/* Stats Grid */}
+        <motion.div
+          variants={containerVariants}
+          initial="hidden"
+          animate="visible"
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 mb-12"
+        >
           {stats.map((item, i) => (
-            <div
+            <motion.div
               key={i}
-              className="bg-white rounded-2xl p-6 shadow-md border border-gray-100 hover:-translate-y-1 transition transform"
+              variants={itemVariants}
+              whileHover={{ y: -5, scale: 1.02 }}
+              className="glass-effect rounded-3xl p-6 shadow-premium border border-white/40 flex items-center space-x-5"
             >
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-gray-500 text-sm font-medium">{item.title}</p>
-                  <p className="text-3xl font-bold text-gray-800 mt-1">{item.value}</p>
-                  <p className="text-green-600 text-sm mt-2">{item.growth} from last month</p>
-                </div>
-                <div
-                  className={`w-14 h-14 bg-${item.color}-100 rounded-xl flex items-center justify-center`}
-                >
-                  <svg
-                    className={`w-8 h-8 text-${item.color}-600`}
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth="2"
-                      d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-                    />
-                  </svg>
-                </div>
+              <div className={`w-14 h-14 bg-gradient-to-br ${item.color} rounded-2xl flex items-center justify-center text-2xl shadow-lg ring-4 ring-white/30`}>
+                {item.icon}
+              </div>
+              <div>
+                <p className="text-slate-500 text-xs font-bold uppercase tracking-wider mb-1">{item.title}</p>
+                <p className="text-2xl font-extrabold text-slate-800 font-display">{item.value}</p>
+              </div>
+            </motion.div>
+          ))}
+        </motion.div>
+
+        {/* Charts Grid */}
+        <div className="grid grid-cols-1 gap-8 mb-12">
+          <motion.section
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="glass-effect rounded-3xl p-8 shadow-premium border border-white/40"
+          >
+            <div className="flex items-center space-x-4 mb-8">
+              <div className="w-1.5 h-8 bg-indigo-500 rounded-full" />
+              <div>
+                <h2 className="text-2xl font-bold text-slate-800 font-display">Event Analytics</h2>
+                <p className="text-slate-500 text-sm">Monthly event completion trends</p>
               </div>
             </div>
-          ))}
+            <div className="h-[400px]">
+              <EventStatsGraph />
+            </div>
+          </motion.section>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <motion.section
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              className="glass-effect rounded-3xl p-8 shadow-premium border border-white/40"
+            >
+              <h2 className="text-2xl font-bold text-slate-800 mb-2 font-display">Media Growth</h2>
+              <p className="text-slate-500 mb-8 text-sm italic">Multi-platform social performance</p>
+              <div className="h-[350px]">
+                <MediaStatsGraph />
+              </div>
+            </motion.section>
+
+            <motion.section
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              className="glass-effect rounded-3xl p-8 shadow-premium border border-white/40"
+            >
+              <h2 className="text-2xl font-bold text-slate-800 mb-2 font-display">Design Productivity</h2>
+              <p className="text-slate-500 mb-8 text-sm italic">Monthly asset output tracking</p>
+              <div className="h-[350px]">
+                <DesignStats />
+              </div>
+            </motion.section>
+          </div>
         </div>
 
-        {/* === LINE CHART === */}
-        <section className="bg-white rounded-2xl p-8 shadow-md border border-gray-100">
-          <div className="flex justify-between mb-6">
-            <div>
-              <h2 className="text-2xl font-bold text-gray-800">Event Completion Overview</h2>
-              <p className="text-gray-500">Monthly event completion trends</p>
+        {/* Interests & Engagement */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          <motion.section
+            initial={{ opacity: 0, x: -20 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            className="glass-effect rounded-3xl p-8 shadow-premium border border-white/40"
+          >
+            <h2 className="text-2xl font-bold text-slate-800 mb-2 font-display">Domain Interests</h2>
+            <p className="text-slate-500 mb-8">Member interest across technological domains</p>
+            <div className="grid grid-cols-2 gap-4">
+              {[
+                { name: "Quantum", val: "40%", grad: "from-indigo-500 to-indigo-600" },
+                { name: "AI & ML", val: "30%", grad: "from-purple-500 to-purple-600" },
+                { name: "Web Dev", val: "20%", grad: "from-sky-500 to-blue-600" },
+                { name: "Security", val: "10%", grad: "from-rose-500 to-pink-600" },
+              ].map((item, i) => (
+                <div key={i} className={`p-4 rounded-2xl bg-gradient-to-br ${item.grad} text-white shadow-lg`}>
+                  <p className="text-white/80 text-xs font-bold uppercase">{item.name}</p>
+                  <p className="text-3xl font-extrabold mt-1">{item.val}</p>
+                </div>
+              ))}
             </div>
-          </div>
-          <EventStatsGraph/>
-        </section>
-        <section className="bg-white rounded-2xl p-8 shadow-md border border-gray-100">
-          <div className="flex justify-between mb-6">
-            <div>
-              <h2 className="text-2xl font-bold text-gray-800">Media Team Monthly Growth</h2>
-              <p className="text-gray-500">Instagram, LinkedIn, and YouTube performance trends</p>
+          </motion.section>
+
+          <motion.section
+            initial={{ opacity: 0, x: 20 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            className="glass-effect rounded-3xl p-8 shadow-premium border border-white/40"
+          >
+            <h2 className="text-2xl font-bold text-slate-800 mb-2 font-display">Engagement Forecast</h2>
+            <p className="text-slate-500 mb-8">Engagement levels across potential event types</p>
+            <div className="space-y-6">
+              {[
+                { name: "Hackathons", val: 90, color: "bg-indigo-500" },
+                { name: "Webinars", val: 75, color: "bg-purple-500" },
+                { name: "Workshops", val: 60, color: "bg-rose-500" },
+                { name: "Networking", val: 45, color: "bg-sky-500" },
+              ].map((e, i) => (
+                <div key={i}>
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="font-bold text-slate-700">{e.name}</span>
+                    <span className="text-sm font-extrabold text-slate-400">{e.val}%</span>
+                  </div>
+                  <div className="w-full bg-slate-100 h-2.5 rounded-full overflow-hidden">
+                    <motion.div
+                      initial={{ width: 0 }}
+                      whileInView={{ width: `${e.val}%` }}
+                      transition={{ duration: 1, delay: i * 0.1 }}
+                      viewport={{ once: true }}
+                      className={`h-full ${e.color} rounded-full shadow-lg`}
+                    />
+                  </div>
+                </div>
+              ))}
             </div>
-          </div>
-
-          <MediaStatsGraph />
-        </section>
-        <section className="bg-white rounded-2xl p-8 shadow-md border border-gray-100">
-          <div className="flex justify-between mb-6">
-            <div>
-              <h2 className="text-2xl font-bold text-gray-800">Design Team Statistics</h2>
-              <p className="text-gray-500">Number of design creation performance trends</p>
-            </div>
-          </div>
-          <DesignStats />
-        </section>
-
-        {/* === DOMAIN INTERESTS === */}
-        <section id="domains" className="bg-white rounded-2xl p-8 shadow-md border border-gray-100">
-          <h2 className="text-2xl font-bold text-gray-800 mb-2">Student Domain Interests</h2>
-          <p className="text-gray-500 mb-6">Popular technology domains among members</p>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {[
-              { name: "Quantum Computing", value: "40%", color: "from-indigo-500 to-indigo-600" },
-              { name: "AI & ML", value: "30%", color: "from-purple-500 to-purple-600" },
-              { name: "Web Development", value: "20%", color: "from-blue-500 to-blue-600" },
-              { name: "Cyber Security", value: "10%", color: "from-green-500 to-green-600" },
-            ].map((item, i) => (
-              <div
-                key={i}
-                className={`bg-gradient-to-br ${item.color} rounded-2xl p-6 text-white shadow-lg`}
-              >
-                <h3 className="font-semibold text-lg mb-1">{item.name}</h3>
-                <p className="text-4xl font-bold">{item.value}</p>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* === EVENT ENGAGEMENT === */}
-        <section id="events" className="bg-white rounded-2xl p-8 shadow-md border border-gray-100">
-          <h2 className="text-2xl font-bold text-gray-800 mb-2">
-            Potential Events & Engagement Level
-          </h2>
-          <p className="text-gray-500 mb-6">Predicted engagement based on member interests</p>
-
-          {[
-            { name: "Coding Contest", value: 90 },
-            { name: "Hackathon", value: 80 },
-            { name: "Workshop", value: 60 },
-            { name: "Seminar", value: 45 },
-          ].map((event, i) => (
-            <div key={i} className="mb-4">
-              <div className="flex justify-between items-center mb-1">
-                <span className="font-semibold text-gray-700">{event.name}</span>
-                <span className="text-sm font-bold text-indigo-600">{event.value}%</span>
-              </div>
-              <div className="bg-gray-200 rounded-full h-3 overflow-hidden">
-                <div
-                  className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full transition-all"
-                  style={{ width: `${event.value}%` }}
-                />
-              </div>
-            </div>
-          ))}
-        </section>
+          </motion.section>
+        </div>
       </div>
     </div>
   );
