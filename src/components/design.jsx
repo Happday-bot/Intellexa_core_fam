@@ -143,7 +143,7 @@ const DesignTeamDashboard = () => {
       progressIndex: 3, // <–– new field injected into the update lifecycle
     };
 
-      const res = await fetch(`http://localhost:8000/editevent/${id}`, {
+      const res = await fetch(`${baseurl}/editevent/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(updatedPayload),
