@@ -10,7 +10,7 @@ import {
   ResponsiveContainer,
 } from "recharts";
 import { Loader2, Upload, FileText, Image, CheckCircle, ExternalLink, Calendar, User, Save } from "lucide-react";
-import { getDesignStats, getEvents, refetchEvents } from "../data/bootstrapStore";
+import { getDesignStats, getEvents, refetchEvents, subscribe } from "../data/bootstrapStore";
 import { useAuth } from "./auth/authcontext";
 import { baseurl } from "../data/url";
 import { motion, AnimatePresence } from "framer-motion";
@@ -28,8 +28,6 @@ const DesignTeamDashboard = () => {
   const currentYear = new Date().getFullYear();
 
   // Fetch Stats and Events
-  const currentMonth = new Date().toLocaleString("default", { month: "long" });
-  const currentYear = new Date().getFullYear();
 
   useEffect(() => {
     const update = () => {
